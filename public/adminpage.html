@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="static/adminpage.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome, Admin</h1>
+    <div class="btncontainer">
+        <button id="logoutButton">Logout</button>
+    </div>
+
+    <div class="alert" id="alertBox"></div>
+
+    <section>
+      <h2>Manage Items</h2>
+      <table id="itemsTable">
+        <thead>
+          <tr>
+            <th>Item Name</th>
+            <th>Description</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="itemsList"></tbody>
+      </table>
+
+      <h3>Add New Item</h3>
+      <form id="addItemForm">
+        <div class="form-group">
+          <input type="text" id="itemName" placeholder="Item Name" required />
+          <input type="text" id="itemDescription" placeholder="Description" required />
+          <button type="submit">Add Item</button>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <h2>Manage Users</h2>
+      <table id="usersTable">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th style="width: 19%;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="usersList"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Unauthorized! Please log in.");
+      window.location.href = "/loginpage.html";
+    }
+
+    const showAlert = (message, isError = false) => {
+      const alertBox = document.getElementById("alertBox");
+      alertBox.textContent = message;
+      alertBox.className = `alert ${isError ? 'error' : ''}`;
+      alertBox.style.display = 'block';
+      setTimeout(() => {
+        alertBox.style.display = 'none';
+      }, 5000);
+    };
+
+    const fetchItems = async () => {
+      try {
+        const res = await fetch("/items", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          const items = await res.json();
+          const itemsList = document.getElementById("itemsList");
+          itemsList.innerHTML = "";
+
+          items.forEach((item) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${item.item}</td>
+              <td>${item.description}</td>
+              <td><button onclick="deleteItem(${item.id})">Delete</button></td>
+            `;
+            itemsList.appendChild(row);
+          });
+        } else {
+          showAlert("Failed to fetch items.", true);
+        }
+      } catch (error) {
+        console.error("Error fetching items:", error);
+        showAlert("An error occurred while fetching items.", true);
+      }
+    };
+
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch("/users", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          const users = await res.json();
+          const usersList = document.getElementById("usersList");
+          usersList.innerHTML = "";
+
+          users.forEach((user) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${user.username}</td>
+              <td>${user.role}</td>
+              <td>
+                ${user.role !== "admin" ? `<button onclick="changeRole(${user.id})">Make Admin</button>` : ""}
+              </td>
+            `;
+            usersList.appendChild(row);
+          });
+        } else {
+          showAlert("Failed to fetch users.", true);
+        }
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        showAlert("An error occurred while fetching users.", true);
+      }
+    };
+
+    const deleteItem = async (id) => {
+      try {
+        const res = await fetch(`/items/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          showAlert("Item deleted successfully.");
+          fetchItems();
+        } else {
+          showAlert("Failed to delete item.", true);
+        }
+      } catch (error) {
+        console.error("Error deleting item:", error);
+        showAlert("An error occurred while deleting the item.", true);
+      }
+    };
+
+    const changeRole = async (id) => {
+      try {
+        const res = await fetch(`/users/${id}/role`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ role: "admin" }),
+        });
+
+        if (res.ok) {
+          showAlert("User role updated to Admin.");
+          fetchUsers();
+        } else {
+          showAlert("Failed to update user role.", true);
+        }
+      } catch (error) {
+        console.error("Error updating role:", error);
+        showAlert("An error occurred while updating the user role.", true);
+      }
+    };
+
+    document.getElementById("addItemForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const item = document.getElementById("itemName").value;
+      const description = document.getElementById("itemDescription").value;
+
+      try {
+        const res = await fetch("/items", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ item, description }),
+        });
+
+        if (res.ok) {
+          showAlert("Item added successfully.");
+          fetchItems();
+        } else {
+          showAlert("Failed to add item.", true);
+        }
+      } catch (error) {
+        console.error("Error adding item:", error);
+        showAlert("An error occurred while adding the item.", true);
+      }
+    });
+
+    document.getElementById("logoutButton").addEventListener("click", () => {
+      localStorage.removeItem("token");
+      window.location.href = "/loginpage.html";
+    });
+
+    fetchItems();
+    fetchUsers();
+  </script>
+</body>
+</html>

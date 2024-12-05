@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "item": "laptop",
+    "description": "ryzen 7, rtx 4050, 512ssd, 16gb ram"
+  },
+  {
+    "id": 2,
+    "item": "Iphone",
+    "description": "16 pro max"
+  }
+]

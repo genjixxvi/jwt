@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Dashboard</title>
+  <link rel="stylesheet" href="static/userpage.css">
+</head>
+
+<body>
+  <div class="container">
+    <h1>Welcome, User</h1>
+    <div class="btncontainer">
+      <button class="button" id="logoutButton">Logout</button>
+    </div>
+
+    <div class="header"
+      style="display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
+      <h2>Items List</h2>
+      <input type="text" id="searchInput" class="search-input" placeholder="Search items..." />
+    </div>
+
+    <hr>
+
+    <table style="width: 100%;">
+      <thead>
+        <tr>
+          <th style="width: 50%;">Item</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody id="itemsList"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Unauthorized! Please log in.");
+      window.location.href = "/loginpage.html";
+    }
+
+    const fetchItems = async () => {
+      const res = await fetch("/items", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const items = await res.json();
+        const itemsList = document.getElementById("itemsList");
+        itemsList.innerHTML = "";
+        items.forEach((item) => {
+          const tr = document.createElement("tr");
+          const tdItem = document.createElement("td");
+          tdItem.textContent = item.item;
+          const tdDescription = document.createElement("td");
+          tdDescription.textContent = item.description;
+          tr.appendChild(tdItem);
+          tr.appendChild(tdDescription);
+          itemsList.appendChild(tr);
+        });
+      } else {
+        alert("Failed to fetch items.");
+      }
+    };
+
+    const filterItems = () => {
+      const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+      const rows = document.querySelectorAll("#itemsList tr");
+
+      rows.forEach((row) => {
+        const item = row.children[0].textContent.toLowerCase();
+        const description = row.children[1].textContent.toLowerCase();
+
+        if (item.includes(searchTerm) || description.includes(searchTerm)) {
+          row.style.display = "";
+        } else {
+          row.style.display = "none";
+        }
+      });
+    };
+
+    document.getElementById("searchInput").addEventListener("input", filterItems);
+
+    document.getElementById("logoutButton").addEventListener("click", () => {
+      localStorage.removeItem("token");
+      window.location.href = "/loginpage.html";
+    });
+
+    fetchItems();
+  </script>
+</body>
+
+</html>
