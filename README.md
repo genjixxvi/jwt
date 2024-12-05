@@ -33,7 +33,7 @@ node app.js
 
 ### register page
 
-![register](./assets/register.png)
+![register](./assets/registration.png)
 
 ### user page
 
